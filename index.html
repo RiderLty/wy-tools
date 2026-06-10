@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>工程造价审核数据校验工具 | Word vs Excel 对比</title>
+    <!-- 引入第三方库：SheetJS 解析 Excel，Mammoth 解析 docx -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', 'Noto Sans', sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            margin: 0;
+            padding: 24px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            padding: 24px 28px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #1e3a5f;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sub {
+            color: #4b5563;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+            margin: 12px 0 24px 0;
+            font-size: 0.9rem;
+            background: #f8fafc;
+            border-radius: 12px;
+            line-height: 1.4;
+        }
+        .upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-bottom: 28px;
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 20px;
+        }
+        .file-card {
+            flex: 1;
+            min-width: 260px;
+            background: white;
+            border-radius: 20px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: 0.2s;
+        }
+        .file-card label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 12px;
+            color: #0f172a;
+            font-size: 1rem;
+        }
+        .file-card input {
+            width: 100%;
+            padding: 10px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            background: #ffffff;
+            font-size: 0.85rem;
+        }
+        .file-status {
+            font-size: 0.75rem;
+            margin-top: 10px;
+            color: #2c3e66;
+        }
+        .btn-compare {
+            background: #1e3a5f;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .btn-compare:hover {
+            background: #0f2b44;
+            transform: translateY(-1px);
+        }
+        .btn-compare:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin: 20px 0 12px 0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .stats {
+            background: #eef2ff;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .diff-table th {
+            background: #f1f5f9;
+            text-align: left;
+            padding: 12px 10px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        .diff-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e9edf2;
+            vertical-align: top;
+        }
+        .project-group {
+            margin-bottom: 24px;
+            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid #e9edf2;
+            overflow: hidden;
+        }
+        .project-title {
+            background: #f8fafc;
+            padding: 14px 20px;
+            font-weight: 700;
+            font-size: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .project-title .badge {
+            font-size: 0.7rem;
+            background: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: normal;
+        }
+        .diff-items {
+            padding: 6px 0;
+        }
+        .diff-row {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #f0f2f5;
+            padding: 12px 20px;
+            gap: 12px;
+            background: #fff;
+        }
+        .diff-field {
+            width: 180px;
+            font-weight: 600;
+            color: #0c4e6e;
+        }
+        .diff-values {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .word-val {
+            background: #fef9e3;
+            padding: 6px 12px;
+            border-radius: 14px;
+            border-left: 4px solid #eab308;
+            font-family: monospace;
+        }
+        .excel-val {
+            background: #e6f7ec;
+            padding: 6px 12px;
+            border-radius: 14px;
+            border-left: 4px solid #2e7d32;
+            font-family: monospace;
+        }
+        .warning-text {
+            color: #b91c1c;
+            font-weight: 500;
+        }
+        .not-found {
+            background: #fffbeb;
+            padding: 12px 20px;
+            border-radius: 16px;
+            margin: 10px 0;
+            border-left: 5px solid #f97316;
+        }
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #1e3a5f;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .footer-note {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 32px;
+            color: #5c6f87;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 18px;
+        }
+        .error-log {
+            background: #fee2e2;
+            padding: 12px 20px;
+            border-radius: 20px;
+            margin: 16px 0;
+            color: #991b1b;
+        }
+        summary {
+            cursor: pointer;
+            font-weight: 500;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 16px; }
+            .diff-field { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 工程造价审核数据校验</h1>
+    <div class="sub">基于 Word 会议议题文件（.docx）与 Excel 明细表（.xls/.xlsx）自动比对项目信息、金额、核减率等关键字段，输出详细差异报告。</div>
+
+    <div class="upload-area">
+        <div class="file-card">
+            <label>📄 Word 文档（议题文件）</label>
+            <input type="file" id="wordFile" accept=".docx, .doc" />
+            <div class="file-status" id="wordStatus">⚡ 仅支持 .docx (强烈推荐) </div>
+        </div>
+        <div class="file-card">
+            <label>📑 Excel 明细表</label>
+            <input type="file" id="excelFile" accept=".xls, .xlsx, .xlsm" />
+            <div class="file-status" id="excelStatus">第三行作为列名，第四行起数据</div>
+        </div>
+    </div>
+    <button class="btn-compare" id="compareBtn">🔍 开始对比校验</button>
+
+    <div id="resultArea" style="margin-top: 28px;">
+        <!-- 动态渲染结果 -->
+        <div style="text-align: center; color: #6c757d; padding: 40px 0;">请上传文件并点击「开始对比校验」</div>
+    </div>
+    <div class="footer-note">
+        ⚙️ 比对规则说明：Word金额单位（元） vs Excel单位（万元）自动换算；百分比字段（核减率/误差率）Excel存储为小数（如0.0523）自动乘100与Word百分比数值比较。<br>
+        📌 项目名称匹配依据“项目基本情况”分割段落，正则提取各字段；Excel第三行Key严格对应原模板列名。
+    </div>
+</div>
+
+<script>
+    // ========================= 工具函数 & 全局变量 =========================
+    // ---------- 1. Excel 解析（第三行为key，第四行开始为数据）----------
+    function excelToDictArray(fileBuffer) {
+        // 读取 workbook
+        const workbook = XLSX.read(fileBuffer, { type: 'array', cellDates: false, defval: "" });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        // 转为二维数组，保留原始文本/数字格式
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+        if (!rows || rows.length < 4) {
+            throw new Error("Excel 行数不足，至少需要4行（第三行作为key，第四行开始数据）");
+        }
+        // 第三行索引2 作为 keys (统一转为字符串)
+        let keys = rows[2].map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+        // 去除空列头可能会导致列错位，保留原长度
+        const dataRows = rows.slice(3); // 第四行开始
+        const result = [];
+        for (let rowIdx = 0; rowIdx < dataRows.length; rowIdx++) {
+            let row = dataRows[rowIdx];
+            if (!row || row.length === 0 || (row.length === 1 && (row[0] === undefined || row[0] === ""))) continue;
+            // 补齐长度 / 截断
+            let rowValues = row.map(v => (v === undefined || v === null) ? "" : String(v).trim());
+            if (rowValues.length < keys.length) {
+                rowValues = rowValues.concat(Array(keys.length - rowValues.length).fill(""));
+            } else {
+                rowValues = rowValues.slice(0, keys.length);
+            }
+            const obj = {};
+            for (let i = 0; i < keys.length; i++) {
+                obj[keys[i]] = rowValues[i];
+            }
+            // 仅当项目名称非空时加入
+            if (obj["项目名称"] && obj["项目名称"].trim() !== "") {
+                result.push(obj);
+            }
+        }
+        return result;
+    }
+
+    // ---------- 2. Word 文本提取 (docx) ----------
+    async function extractTextFromDocx(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    resolve(result.value); // 纯文本
+                } catch (err) {
+                    reject(new Error("解析 docx 失败: " + err.message));
+                }
+            };
+            reader.onerror = () => reject(new Error("读取 Word 文件失败"));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // 针对 .doc 旧格式提示不支持（前端无法调用catdoc）
+    async function extractWordText(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'docx') {
+            return await extractTextFromDocx(file);
+        } else if (ext === 'doc') {
+            throw new Error("当前版本暂不支持 .doc 格式，请将文件另存为 .docx 后重试。");
+        } else {
+            throw new Error("不支持的文件类型，请上传 .docx 文件。");
+        }
+    }
+
+    // ---------- 3. 正则提取字段（仿Python extract_first_match）----------
+    function extractFirstMatch(text, patterns) {
+        const results = {};
+        for (const [key, pattern] of Object.entries(patterns)) {
+            const regex = new RegExp(pattern, 's');  // s 模式使 '.' 匹配换行符，增强鲁棒
+            const match = text.match(regex);
+            if (match) {
+                // 如果有捕获组，取第一个捕获组；否则取完整匹配
+                results[key] = match[1] !== undefined ? match[1] : match[0];
+            } else {
+                results[key] = "null";
+            }
+        }
+        return results;
+    }
+
+    // 解析Word文本，返回 { 项目名称: 字段字典 }
+    function parseWordProjects(fullText) {
+        // 预处理：统一全角/半角冒号，去掉空白制表符（参照Python逻辑）
+        let processed = fullText.replace(/:/g, "：");     // 英文冒号转中文冒号，保证正则匹配
+        // 分割依据 "项目基本情况"
+        const parts = processed.split("项目基本情况");
+        const projectMap = new Map(); // key: 项目名称, value: 字段对象
+
+        // 定义字段模式 (与python完全对应)
+        const patterns = {
+            "项目名称": "项目名称：([^\\s]+?)($|\\s|\\n|审核)",
+            "建设单位": "建设单位：([^\\s]+)",
+            "监理单位": "监理单位：([^\\s]+)",
+            "施工单位": "施工单位：([^\\s]+)",
+            "初审单位": "初审单位：([^\\s]+)",
+            "复审单位": "复审单位：([^\\s]+)",
+            "建设单位报审价": "(?:建设单位|施工单位)报审价：(\\d+(?:\\.\\d+)?)元",
+            "初审审核价": "初审审核价：(\\d+(?:\\.\\d+)?)元",
+            "初审核减金额": "初审核减金额：(\\d+(?:\\.\\d+)?)元",
+            "初审核减率": "初审核减率：(\\d+(?:\\.\\d+)?)%",
+            "复审审核价": "复审审核价：(\\d+(?:\\.\\d+)?)元",
+            "复审核减金额": "复审核减金额：(\\d+(?:\\.\\d+)?)元",
+            "复审核减率": "复审核减率：(\\d+(?:\\.\\d+)?)%",
+            "总核减率": "总核减率：(\\d+(?:\\.\\d+)?)%",
+            "一审误差率": "工程造价一审误差率为(\\d+(?:\\.\\d+)?)%"
+        };
+
+        for (let part of parts) {
+            let block = part.trim();
+            if (!block) continue;
+            // 去掉空格和制表符（python代码行为：.replace(" ", "").replace("\t", "")）
+            let cleaned = block.replace(/[ \t]+/g, "");
+            // 额外保证项目名称附近清晰
+            const rawResult = extractFirstMatch(cleaned, patterns);
+            if (rawResult["项目名称"] === "null" || !rawResult["项目名称"] || rawResult["项目名称"].trim() === "") {
+                // 部分项目可能名称捕获不到，尝试宽松匹配
+                const looseNameMatch = cleaned.match(/项目名称：([^\\s]+)/);
+                if (looseNameMatch) rawResult["项目名称"] = looseNameMatch[1];
+                else continue;
+            }
+            const projName = rawResult["项目名称"].trim();
+            if (projName === "") continue;
+            // 将null保持为"null"字符串，后续比较用
+            projectMap.set(projName, rawResult);
+        }
+        return projectMap;
+    }
+
+    // ---------- 4. 核心比对逻辑（完全参照main.py比对规则）----------
+    // 定义Excel字段映射关系 (Excel第三行列名字段名 -> 对应在word字典中的key, 及转换规则)
+    const compareRules = [
+        { excelField: "建设单位\n（业主）", wordField: "建设单位", type: "string", transform: null },
+        { excelField: "监理单位", wordField: "监理单位", type: "string", transform: null },
+        { excelField: "承包（施工）\n单位", wordField: "施工单位", type: "string", transform: null },
+        { excelField: "结算审计单位（一审）", wordField: "初审单位", type: "string", transform: null },
+        { excelField: "审查复核单位（复审）", wordField: "复审单位", type: "string", transform: null },
+        { excelField: "报审价\n（万元）", wordField: "建设单位报审价", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
+        { excelField: "一审审核价\n（万元）", wordField: "初审审核价", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
+        { excelField: "一审核减造价\n（万元）", wordField: "初审核减金额", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
+        { excelField: "初审核减率", wordField: "初审核减率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true },
+        { excelField: "复审价\n（万元）", wordField: "复审审核价", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
+        { excelField: "核减造价\n（万元）", wordField: "复审核减金额", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
+        { excelField: "复审核减率", wordField: "复审核减率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true },
+        { excelField: "总核减率", wordField: "总核减率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true },
+        { excelField: "一审误差率", wordField: "一审误差率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true }
+    ];
+
+    // 数值比较阈值 0.01
+    const EPS = 0.01;
+
+    function safeParseNumber(val, isPercentRaw = false) {
+        if (val === "null" || val === null || val === undefined || val === "") return NaN;
+        const num = parseFloat(String(val).trim());
+        return isNaN(num) ? NaN : num;
+    }
+
+    // 单个项目对比
+    function compareProject(projName, wordData, excelData) {
+        const diffs = []; // 存储 { fieldName, wordValue, excelValue, message }
+        for (const rule of compareRules) {
+            const excelRawValue = excelData[rule.excelField];
+            if (excelRawValue === undefined || excelRawValue === "") {
+                // excel字段缺失，不比较（但如果word有值也可以提醒，但为简洁先忽略）
+                continue;
+            }
+            let wordVal = wordData[rule.wordField] || "null";
+            let excelVal = excelRawValue;
+            // 类型转换与比较
+            if (rule.type === "string") {
+                let wStr = wordVal === "null" ? "" : String(wordVal).trim();
+                let eStr = String(excelVal).trim();
+                if (wStr !== eStr) {
+                    diffs.push({
+                        fieldName: rule.wordField,
+                        wordValue: wStr || "(空)",
+                        excelValue: eStr || "(空)",
+                        reason: "值不一致"
+                    });
+                }
+            } 
+            else if (rule.type === "number") {
+                let wNum = safeParseNumber(wordVal);
+                let eNumRaw = safeParseNumber(excelVal);
+                if (isNaN(wNum) || isNaN(eNumRaw)) {
+                    if (!(isNaN(wNum) && isNaN(eNumRaw))) {
+                        diffs.push({
+                            fieldName: rule.wordField,
+                            wordValue: wordVal,
+                            excelValue: `${excelVal} (万元)`,
+                            reason: "数值无效/无法转换"
+                        });
+                    }
+                    continue;
+                }
+                let eNumTransformed = rule.transform ? rule.transform(eNumRaw) : eNumRaw;
+                if (Math.abs(wNum - eNumTransformed) > EPS) {
+                    diffs.push({
+                        fieldName: rule.wordField,
+                        wordValue: `${wNum} 元`,
+                        excelValue: `${excelVal} 万元 → 转换值 ${eNumTransformed.toFixed(2)} 元`,
+                        reason: "数值差异超过0.01元"
+                    });
+                }
+            }
+            else if (rule.type === "percent") {
+                let wPercent = safeParseNumber(wordVal);
+                let ePercentRaw = safeParseNumber(excelVal);
+                if (isNaN(wPercent) || isNaN(ePercentRaw)) {
+                    if (!(isNaN(wPercent) && isNaN(ePercentRaw))) {
+                        diffs.push({
+                            fieldName: rule.wordField,
+                            wordValue: wordVal,
+                            excelValue: `${excelVal} (原始)`,
+                            reason: "百分比数值无效"
+                        });
+                    }
+                    continue;
+                }
+                let eTransformed = rule.transform(ePercentRaw);
+                if (Math.abs(wPercent - eTransformed) > EPS) {
+                    diffs.push({
+                        fieldName: rule.wordField,
+                        wordValue: `${wPercent}%`,
+                        excelValue: `${excelVal} → 换算后 ${eTransformed.toFixed(2)}%`,
+                        reason: "百分比率差异超过0.01%"
+                    });
+                }
+            }
+        }
+        return diffs;
+    }
+
+    // 主对比调度
+    async function performCompare(wordFile, excelFile) {
+        // 1. 解析Word
+        const wordText = await extractWordText(wordFile);
+        const wordProjects = parseWordProjects(wordText);
+        // 2. 解析Excel
+        const excelBuffer = await readFileAsArrayBuffer(excelFile);
+        const excelDataArray = excelToDictArray(excelBuffer);
+        
+        // 构建Excel Map: 项目名称 -> 行数据
+        const excelMap = new Map();
+        for (const row of excelDataArray) {
+            let projName = row["项目名称"] ? row["项目名称"].trim() : "";
+            if (projName) excelMap.set(projName, row);
+        }
+        
+        // 收集结果
+        const matchedProjects = [];      // 存放 { projName, diffs, excelData, wordData }
+        const missingInWord = [];        // Excel中存在，Word中缺失
+        const extraInWord = [];           // Word中存在，Excel中缺失
+        
+        // 遍历Excel中所有项目
+        for (let [excelProj, excelRow] of excelMap.entries()) {
+            if (wordProjects.has(excelProj)) {
+                const wordRow = wordProjects.get(excelProj);
+                const diffs = compareProject(excelProj, wordRow, excelRow);
+                matchedProjects.push({ projName: excelProj, diffs, excelData: excelRow, wordData: wordRow });
+            } else {
+                missingInWord.push({ projName: excelProj, excelData: excelRow });
+            }
+        }
+        // Word中有但Excel没有
+        for (let [wordProj, wordRow] of wordProjects.entries()) {
+            if (!excelMap.has(wordProj)) {
+                extraInWord.push({ projName: wordProj, wordData: wordRow });
+            }
+        }
+        
+        return { matchedProjects, missingInWord, extraInWord, totalExcel: excelMap.size, totalWord: wordProjects.size };
+    }
+    
+    // 辅助读取文件为ArrayBuffer
+    function readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = e => reject(new Error("文件读取失败"));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    // =============== UI 渲染组件 ===============
+    function renderResults(result) {
+        const { matchedProjects, missingInWord, extraInWord, totalExcel, totalWord } = result;
+        const container = document.getElementById("resultArea");
+        if (!matchedProjects.length && missingInWord.length === 0 && extraInWord.length === 0) {
+            container.innerHTML = `<div style="background: #e0f2fe; border-radius: 24px; padding: 28px; text-align: center; color: #0369a1;">✅ 全部一致！ Excel中 ${totalExcel} 个项目与 Word 中 ${totalWord} 个项目对应字段完全匹配，无差异。</div>`;
+            return;
+        }
+        
+        let html = `<div class="result-header"><span><strong>📋 校验报告</strong> (Word项目数: ${totalWord} , Excel项目数: ${totalExcel})</span><span class="stats">⚠️ 差异项目: ${matchedProjects.filter(p=>p.diffs.length>0).length} 项 / 完全一致: ${matchedProjects.filter(p=>p.diffs.length===0).length} 项</span></div>`;
+        
+        // 展示匹配但有差异的项目
+        const projectsWithDiff = matchedProjects.filter(p => p.diffs.length > 0);
+        if (projectsWithDiff.length > 0) {
+            html += `<div style="margin-top: 20px;"><h3>🔁 不一致项目详情</h3>`;
+            for (const proj of projectsWithDiff) {
+                html += `<div class="project-group">
+                            <div class="project-title">📌 ${escapeHtml(proj.projName)} <span class="badge">${proj.diffs.length} 处差异</span></div>
+                            <div class="diff-items">`;
+                for (const diff of proj.diffs) {
+                    html += `<div class="diff-row">
+                                <div class="diff-field">${escapeHtml(diff.fieldName)}</div>
+                                <div class="diff-values">
+                                    <div class="word-val">📄 Word: ${escapeHtml(diff.wordValue)}</div>
+                                    <div class="excel-val">📊 Excel: ${escapeHtml(diff.excelValue)}</div>
+                                    <div style="font-size:0.7rem; color:#b45309;">⚡ ${escapeHtml(diff.reason)}</div>
+                                </div>
+                             </div>`;
+                }
+                html += `</div></div>`;
+            }
+            html += `</div>`;
+        }
+        
+        // 完全一致的项目折叠显示
+        const perfectMatch = matchedProjects.filter(p => p.diffs.length === 0);
+        if (perfectMatch.length > 0) {
+            html += `<details style="margin-top: 18px; background:#f9f9fc; border-radius: 20px; padding: 8px 12px;">
+                        <summary style="font-weight:500; cursor:pointer;">✅ 完全一致的项目 (${perfectMatch.length}个)</summary>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px;">${perfectMatch.map(p=>`<span style="background:#e9f5e9; padding:5px 12px; border-radius:40px;">${escapeHtml(p.projName)}</span>`).join('')}</div>
+                     </details>`;
+        }
+        
+        // Excel中存在，Word缺失
+        if (missingInWord.length > 0) {
+            html += `<div class="not-found"><strong>⚠️ Excel中存在但在Word中未找到的项目 (${missingInWord.length})</strong><ul>`;
+            missingInWord.forEach(m => { html += `<li>${escapeHtml(m.projName)}</li>`; });
+            html += `</ul></div>`;
+        }
+        // Word中存在，Excel缺失
+        if (extraInWord.length > 0) {
+            html += `<div class="not-found" style="border-left-color:#f59e0b;"><strong>📄 Word中存在但Excel明细缺失的项目 (${extraInWord.length})</strong><ul>`;
+            extraInWord.forEach(m => { html += `<li>${escapeHtml(m.projName)}</li>`; });
+            html += `</ul></div>`;
+        }
+        
+        container.innerHTML = html;
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+    
+    // 界面绑定逻辑
+    document.getElementById("compareBtn").addEventListener("click", async () => {
+        const wordInput = document.getElementById("wordFile");
+        const excelInput = document.getElementById("excelFile");
+        const wordFile = wordInput.files[0];
+        const excelFile = excelInput.files[0];
+        const resultDiv = document.getElementById("resultArea");
+        
+        if (!wordFile || !excelFile) {
+            resultDiv.innerHTML = `<div class="error-log">❌ 请同时上传 Word 文档(.docx) 和 Excel 文件后再对比。</div>`;
+            return;
+        }
+        
+        const ext = wordFile.name.split('.').pop().toLowerCase();
+        if (ext !== 'docx') {
+            resultDiv.innerHTML = `<div class="error-log">⚠️ 当前仅支持 .docx 格式文档。请转换格式后重试。</div>`;
+            return;
+        }
+        
+        resultDiv.innerHTML = `<div style="text-align:center; padding: 40px;"><span class="loader"></span> 正在解析文件并对比数据，请稍候...</div>`;
+        const btn = document.getElementById("compareBtn");
+        btn.disabled = true;
+        
+        try {
+            const compareResult = await performCompare(wordFile, excelFile);
+            renderResults(compareResult);
+        } catch (err) {
+            console.error(err);
+            resultDiv.innerHTML = `<div class="error-log">❌ 解析失败: ${escapeHtml(err.message)}<br>请检查文件格式是否符合要求（Word模板需含“项目基本情况”分割，Excel第三行列名参照规范）。</div>`;
+        } finally {
+            btn.disabled = false;
+        }
+    });
+    
+    // 文件状态提示美化
+    document.getElementById("wordFile").addEventListener("change", (e) => {
+        const f = e.target.files[0];
+        document.getElementById("wordStatus").innerHTML = f ? `✅ 已选: ${f.name}` : "⚡ 仅支持 .docx (推荐)";
+    });
+    document.getElementById("excelFile").addEventListener("change", (e) => {
+        const f = e.target.files[0];
+        document.getElementById("excelStatus").innerHTML = f ? `✅ 已选: ${f.name}` : "第三行作为列名，第四行起数据";
+    });
+</script>
+</body>
+</html>

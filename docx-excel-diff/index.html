@@ -49,41 +49,138 @@
         .upload-area {
             display: flex;
             flex-wrap: wrap;
-            gap: 24px;
+            gap: 20px;
             margin-bottom: 28px;
-            background: #f9fafb;
-            padding: 20px;
-            border-radius: 20px;
         }
         .file-card {
             flex: 1;
-            min-width: 260px;
+            min-width: 280px;
             background: white;
-            border-radius: 20px;
-            padding: 16px 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-            transition: 0.2s;
+            border-radius: 16px;
+            padding: 24px;
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
-        .file-card label {
+        .file-card:hover {
+            border-color: #94a3b8;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .file-card.has-file {
+            border-style: solid;
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        }
+        .file-card.drag-over {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(59,130,246,0.15);
+        }
+        .file-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .file-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .file-card-icon.word {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+        .file-card-icon.excel {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+        .file-card-title {
             font-weight: 600;
-            display: block;
-            margin-bottom: 12px;
             color: #0f172a;
             font-size: 1rem;
         }
-        .file-card input {
-            width: 100%;
-            padding: 10px 8px;
-            border: 1px solid #cbd5e1;
-            border-radius: 14px;
-            background: #ffffff;
+        .file-card-hint {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .file-drop-zone {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+        }
+        .file-card:hover .file-drop-zone {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .file-card.drag-over .file-drop-zone {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .file-card.has-file .file-drop-zone {
+            border-style: solid;
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .drop-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            opacity: 0.6;
+        }
+        .drop-text {
             font-size: 0.85rem;
+            color: #64748b;
+        }
+        .drop-text-main {
+            font-weight: 500;
+            color: #475569;
+        }
+        .file-card input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
         }
         .file-status {
-            font-size: 0.75rem;
-            margin-top: 10px;
-            color: #2c3e66;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-status.success {
+            background: #f0fdf4;
+            color: #166534;
+        }
+        .file-status.default {
+            background: #f8fafc;
+            color: #64748b;
+        }
+        .file-status.error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .file-card.drag-over {
+            animation: pulse 1.5s ease-in-out infinite;
         }
         .btn-compare {
             background: #1e3a5f;
@@ -374,15 +471,41 @@
     <div class="sub">基于 Word 会议议题文件（.docx）与 Excel 明细表（.xls/.xlsx）自动比对项目信息、金额、核减率等关键字段，输出详细差异报告。</div>
 
     <div class="upload-area">
-        <div class="file-card">
-            <label>📄 Word 文档（议题文件）</label>
+        <div class="file-card" id="wordCard">
+            <div class="file-card-header">
+                <div class="file-card-icon word">📄</div>
+                <div>
+                    <div class="file-card-title">Word 文档</div>
+                    <div class="file-card-hint">议题文件</div>
+                </div>
+            </div>
+            <div class="file-drop-zone">
+                <div class="drop-icon">📥</div>
+                <div class="drop-text">
+                    <span class="drop-text-main">点击选择或拖拽文件</span><br>
+                    支持 .docx / .doc 格式
+                </div>
+            </div>
             <input type="file" id="wordFile" accept=".docx, .doc" />
-            <div class="file-status" id="wordStatus">⚡ 仅支持 .docx (强烈推荐) </div>
+            <div class="file-status default" id="wordStatus">等待选择文件...</div>
         </div>
-        <div class="file-card">
-            <label>📑 Excel 明细表</label>
+        <div class="file-card" id="excelCard">
+            <div class="file-card-header">
+                <div class="file-card-icon excel">📊</div>
+                <div>
+                    <div class="file-card-title">Excel 明细表</div>
+                    <div class="file-card-hint">数据表格</div>
+                </div>
+            </div>
+            <div class="file-drop-zone">
+                <div class="drop-icon">📥</div>
+                <div class="drop-text">
+                    <span class="drop-text-main">点击选择或拖拽文件</span><br>
+                    第三行作为列名，第四行起数据
+                </div>
+            </div>
             <input type="file" id="excelFile" accept=".xls, .xlsx, .xlsm" />
-            <div class="file-status" id="excelStatus">第三行作为列名，第四行起数据</div>
+            <div class="file-status default" id="excelStatus">等待选择文件...</div>
         </div>
     </div>
     <button class="btn-compare" id="compareBtn">🔍 开始对比校验</button>
@@ -813,14 +936,86 @@
     });
     
     // 文件状态提示美化
-    document.getElementById("wordFile").addEventListener("change", (e) => {
-        const f = e.target.files[0];
-        document.getElementById("wordStatus").innerHTML = f ? `✅ 已选: ${f.name}` : "⚡ 仅支持 .docx (推荐)";
+    function updateFileStatus(inputId, statusId, cardId) {
+        const input = document.getElementById(inputId);
+        const status = document.getElementById(statusId);
+        const card = document.getElementById(cardId);
+        const f = input.files[0];
+
+        if (f) {
+            const sizeKB = (f.size / 1024).toFixed(1);
+            status.innerHTML = `✅ ${f.name} (${sizeKB} KB)`;
+            status.className = 'file-status success';
+            card.classList.add('has-file');
+        } else {
+            status.innerHTML = '等待选择文件...';
+            status.className = 'file-status default';
+            card.classList.remove('has-file');
+        }
+    }
+
+    document.getElementById("wordFile").addEventListener("change", () => {
+        updateFileStatus('wordFile', 'wordStatus', 'wordCard');
     });
-    document.getElementById("excelFile").addEventListener("change", (e) => {
-        const f = e.target.files[0];
-        document.getElementById("excelStatus").innerHTML = f ? `✅ 已选: ${f.name}` : "第三行作为列名，第四行起数据";
+    document.getElementById("excelFile").addEventListener("change", () => {
+        updateFileStatus('excelFile', 'excelStatus', 'excelCard');
     });
+
+    // ========================= 拖拽上传功能 =========================
+    function setupDragDrop(cardId, inputId, statusId, acceptExts) {
+        const card = document.getElementById(cardId);
+        const input = document.getElementById(inputId);
+        const status = document.getElementById(statusId);
+
+        // 阻止默认行为（防止浏览器直接打开文件）
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            card.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        // 拖入/悬停时高亮
+        card.addEventListener('dragenter', () => card.classList.add('drag-over'));
+        card.addEventListener('dragover', () => card.classList.add('drag-over'));
+        card.addEventListener('dragleave', (e) => {
+            // 只有当离开卡片区域时才移除高亮
+            if (!card.contains(e.relatedTarget)) {
+                card.classList.remove('drag-over');
+            }
+        });
+        card.addEventListener('drop', (e) => {
+            card.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length === 0) return;
+
+            const file = files[0];
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            // 验证文件类型
+            if (!acceptExts.includes(ext)) {
+                status.innerHTML = `❌ 不支持 .${ext} 格式`;
+                status.className = 'file-status error';
+                setTimeout(() => {
+                    status.innerHTML = '等待选择文件...';
+                    status.className = 'file-status default';
+                }, 3000);
+                return;
+            }
+
+            // 将文件赋值给 input（通过 DataTransfer）
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            input.files = dataTransfer.files;
+
+            // 触发 change 事件
+            input.dispatchEvent(new Event('change'));
+        });
+    }
+
+    // 初始化拖拽上传
+    setupDragDrop('wordCard', 'wordFile', 'wordStatus', ['docx', 'doc']);
+    setupDragDrop('excelCard', 'excelFile', 'excelStatus', ['xls', 'xlsx', 'xlsm']);
 
     // ========================= 编辑匹配规则功能 =========================
     const STORAGE_KEY = 'docx-excel-diff-rules';

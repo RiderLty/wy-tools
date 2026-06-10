@@ -248,9 +248,123 @@
             cursor: pointer;
             font-weight: 500;
         }
+        /* 编辑匹配规则表格样式 */
+        .rules-section {
+            margin-top: 28px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .rules-header {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .rules-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #1e3a5f;
+        }
+        .rules-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .btn-sm:hover {
+            background: #f1f5f9;
+        }
+        .btn-sm.primary {
+            background: #1e3a5f;
+            color: white;
+            border-color: #1e3a5f;
+        }
+        .btn-sm.primary:hover {
+            background: #0f2b44;
+        }
+        .btn-sm.danger {
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+        .btn-sm.danger:hover {
+            background: #fef2f2;
+        }
+        .rules-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .rules-table th {
+            background: #f1f5f9;
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .rules-table td {
+            padding: 8px 14px;
+            border-bottom: 1px solid #f0f2f5;
+            vertical-align: middle;
+        }
+        .rules-table input,
+        .rules-table select {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            background: white;
+        }
+        .rules-table input:focus,
+        .rules-table select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+        }
+        .rules-table .action-col {
+            width: 60px;
+            text-align: center;
+        }
+        .rules-table .btn-delete {
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .rules-table .btn-delete:hover {
+            background: #fef2f2;
+        }
+        .rules-table .multiplier-input {
+            width: 80px;
+            text-align: center;
+            font-family: monospace;
+        }
+        .rules-table .row-number {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            width: 40px;
+        }
         @media (max-width: 700px) {
             .container { padding: 16px; }
             .diff-field { width: 100%; }
+            .rules-actions { width: 100%; justify-content: flex-end; }
+            .rules-table { font-size: 0.78rem; }
+            .rules-table th, .rules-table td { padding: 8px 6px; }
         }
     </style>
 </head>
@@ -277,6 +391,45 @@
         <!-- 动态渲染结果 -->
         <div style="text-align: center; color: #6c757d; padding: 40px 0;">请上传文件并点击「开始对比校验」</div>
     </div>
+
+    <!-- 编辑匹配规则区域 -->
+    <details class="rules-section" id="rulesSection" open>
+        <summary class="rules-header">
+            <h3>⚙️ 编辑匹配规则</h3>
+        </summary>
+        <div style="padding: 16px 20px;">
+            <div class="rules-actions" style="margin-bottom: 16px;">
+                <button class="btn-sm primary" id="btnAddRule">➕ 添加规则</button>
+                <button class="btn-sm" id="btnResetRules">🔄 恢复默认</button>
+                <button class="btn-sm" id="btnExportRules">📥 导出 JSON</button>
+                <button class="btn-sm" id="btnImportRules">📤 导入 JSON</button>
+                <input type="file" id="importFileInput" accept=".json" style="display:none;">
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="rules-table" id="rulesTable">
+                    <thead>
+                        <tr>
+                            <th class="row-number">#</th>
+                            <th style="min-width:150px;">显示名称</th>
+                            <th style="min-width:200px;">Word 正则表达式</th>
+                            <th style="min-width:180px;">Excel 列名 Key</th>
+                            <th style="min-width:100px;">匹配类型</th>
+                            <th style="min-width:100px;">转换系数</th>
+                            <th class="action-col">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rulesTableBody">
+                        <!-- 动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; font-size:0.75rem; color:#64748b;">
+                💡 提示：修改后自动保存到浏览器本地存储（localStorage）。支持导入/导出 JSON 配置文件。<br>
+                📐 转换系数说明：Excel值 × 转换系数 = 比较值。例如：Excel单位为万元，Word单位为元，系数填 10000。<br>
+                📋 Excel列名中的换行符会自动去除，填写时无需包含 \n。
+            </div>
+        </div>
+    </details>
     <div class="footer-note">
         ⚙️ 比对规则说明：Word金额单位（元） vs Excel单位（万元）自动换算；百分比字段（核减率/误差率）Excel存储为小数（如0.0523）自动乘100与Word百分比数值比较。<br>
         📌 项目名称匹配依据“项目基本情况”分割段落，正则提取各字段；Excel第三行Key严格对应原模板列名。
@@ -295,8 +448,11 @@
         if (!rows || rows.length < 4) {
             throw new Error("Excel 行数不足，至少需要4行（第三行作为key，第四行开始数据）");
         }
-        // 第三行索引2 作为 keys (统一转为字符串)
-        let keys = rows[2].map(cell => (cell === undefined || cell === null) ? "" : String(cell).trim());
+        // 第三行索引2 作为 keys (统一转为字符串，去除换行符和首尾空格)
+        let keys = rows[2].map(cell => {
+            if (cell === undefined || cell === null) return "";
+            return String(cell).replace(/[\r\n]+/g, "").trim();
+        });
         // 去除空列头可能会导致列错位，保留原长度
         const dataRows = rows.slice(3); // 第四行开始
         const result = [];
@@ -376,24 +532,16 @@
         const parts = processed.split("项目基本情况");
         const projectMap = new Map(); // key: 项目名称, value: 字段对象
 
-        // 定义字段模式 (与python完全对应)
+        // 从用户配置构建 patterns
         const patterns = {
-            "项目名称": "项目名称：([^\\s]+?)($|\\s|\\n|审核)",
-            "建设单位": "建设单位：([^\\s]+)",
-            "监理单位": "监理单位：([^\\s]+)",
-            "施工单位": "施工单位：([^\\s]+)",
-            "初审单位": "初审单位：([^\\s]+)",
-            "复审单位": "复审单位：([^\\s]+)",
-            "建设单位报审价": "(?:建设单位|施工单位)报审价：(\\d+(?:\\.\\d+)?)元",
-            "初审审核价": "初审审核价：(\\d+(?:\\.\\d+)?)元",
-            "初审核减金额": "初审核减金额：(\\d+(?:\\.\\d+)?)元",
-            "初审核减率": "初审核减率：(\\d+(?:\\.\\d+)?)%",
-            "复审审核价": "复审审核价：(\\d+(?:\\.\\d+)?)元",
-            "复审核减金额": "复审核减金额：(\\d+(?:\\.\\d+)?)元",
-            "复审核减率": "复审核减率：(\\d+(?:\\.\\d+)?)%",
-            "总核减率": "总核减率：(\\d+(?:\\.\\d+)?)%",
-            "一审误差率": "工程造价一审误差率为(\\d+(?:\\.\\d+)?)%"
+            "项目名称": "项目名称：([^\\s]+?)($|\\s|\\n|审核)"  // 项目名称固定
         };
+        // 添加用户配置的字段
+        currentRules.forEach(rule => {
+            if (rule.name && rule.wordPattern) {
+                patterns[rule.name] = rule.wordPattern;
+            }
+        });
 
         for (let part of parts) {
             let block = part.trim();
@@ -417,23 +565,10 @@
     }
 
     // ---------- 4. 核心比对逻辑（完全参照main.py比对规则）----------
-    // 定义Excel字段映射关系 (Excel第三行列名字段名 -> 对应在word字典中的key, 及转换规则)
-    const compareRules = [
-        { excelField: "建设单位\n（业主）", wordField: "建设单位", type: "string", transform: null },
-        { excelField: "监理单位", wordField: "监理单位", type: "string", transform: null },
-        { excelField: "承包（施工）\n单位", wordField: "施工单位", type: "string", transform: null },
-        { excelField: "结算审计单位（一审）", wordField: "初审单位", type: "string", transform: null },
-        { excelField: "审查复核单位（复审）", wordField: "复审单位", type: "string", transform: null },
-        { excelField: "报审价\n（万元）", wordField: "建设单位报审价", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
-        { excelField: "一审审核价\n（万元）", wordField: "初审审核价", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
-        { excelField: "一审核减造价\n（万元）", wordField: "初审核减金额", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
-        { excelField: "初审核减率", wordField: "初审核减率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true },
-        { excelField: "复审价\n（万元）", wordField: "复审审核价", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
-        { excelField: "核减造价\n（万元）", wordField: "复审核减金额", type: "number", transform: (excelVal) => parseFloat(excelVal) * 10000, wordIsYuan: true },
-        { excelField: "复审核减率", wordField: "复审核减率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true },
-        { excelField: "总核减率", wordField: "总核减率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true },
-        { excelField: "一审误差率", wordField: "一审误差率", type: "percent", transform: (excelVal) => parseFloat(excelVal) * 100, wordIsPercentRaw: true }
-    ];
+    // 获取当前活跃的比对规则（从用户配置或默认值）
+    function getActiveCompareRules() {
+        return buildCompareRules(currentRules);
+    }
 
     // 数值比较阈值 0.01
     const EPS = 0.01;
@@ -447,7 +582,8 @@
     // 单个项目对比
     function compareProject(projName, wordData, excelData) {
         const diffs = []; // 存储 { fieldName, wordValue, excelValue, message }
-        for (const rule of compareRules) {
+        const activeRules = getActiveCompareRules();
+        for (const rule of activeRules) {
             const excelRawValue = excelData[rule.excelField];
             if (excelRawValue === undefined || excelRawValue === "") {
                 // excel字段缺失，不比较（但如果word有值也可以提醒，但为简洁先忽略）
@@ -487,7 +623,7 @@
                     diffs.push({
                         fieldName: rule.wordField,
                         wordValue: `${wNum} 元`,
-                        excelValue: `${excelVal} 万元 → 转换值 ${eNumTransformed.toFixed(2)} 元`,
+                        excelValue: `${eNumTransformed.toFixed(2)} 元 <== 原始值 ${excelVal} 万元`,
                         reason: "数值差异超过0.01元"
                     });
                 }
@@ -594,7 +730,7 @@
                     html += `<div class="diff-row">
                                 <div class="diff-field">${escapeHtml(diff.fieldName)}</div>
                                 <div class="diff-values">
-                                    <div class="word-val">📄 Word: ${escapeHtml(diff.wordValue)}</div>
+                                    <div class="word-val">📄 Word  : ${escapeHtml(diff.wordValue)}</div>
                                     <div class="excel-val">📊 Excel: ${escapeHtml(diff.excelValue)}</div>
                                     <div style="font-size:0.7rem; color:#b45309;">⚡ ${escapeHtml(diff.reason)}</div>
                                 </div>
@@ -685,6 +821,187 @@
         const f = e.target.files[0];
         document.getElementById("excelStatus").innerHTML = f ? `✅ 已选: ${f.name}` : "第三行作为列名，第四行起数据";
     });
+
+    // ========================= 编辑匹配规则功能 =========================
+    const STORAGE_KEY = 'docx-excel-diff-rules';
+
+    // 默认规则（从原 compareRules 提取，不含 transform 函数）
+    const defaultRulesConfig = [
+        { name: "建设单位", wordPattern: "建设单位：([^\\s]+)", excelKey: "建设单位（业主）", type: "string", multiplier: 1 },
+        { name: "监理单位", wordPattern: "监理单位：([^\\s]+)", excelKey: "监理单位", type: "string", multiplier: 1 },
+        { name: "施工单位", wordPattern: "施工单位：([^\\s]+)", excelKey: "承包（施工）单位", type: "string", multiplier: 1 },
+        { name: "初审单位", wordPattern: "初审单位：([^\\s]+)", excelKey: "结算审计单位（一审）", type: "string", multiplier: 1 },
+        { name: "复审单位", wordPattern: "复审单位：([^\\s]+)", excelKey: "审查复核单位（复审）", type: "string", multiplier: 1 },
+        { name: "报审价（元）", wordPattern: "(?:建设单位|施工单位)报审价：(\\d+(?:\\.\\d+)?)元", excelKey: "报审价（万元）", type: "number", multiplier: 10000 },
+        { name: "初审审核价（元）", wordPattern: "初审审核价：(\\d+(?:\\.\\d+)?)元", excelKey: "一审审核价（万元）", type: "number", multiplier: 10000 },
+        { name: "初审核减金额（元）", wordPattern: "初审核减金额：(\\d+(?:\\.\\d+)?)元", excelKey: "一审核减造价（万元）", type: "number", multiplier: 10000 },
+        { name: "初审核减率（%）", wordPattern: "初审核减率：(\\d+(?:\\.\\d+)?)%", excelKey: "初审核减率", type: "percent", multiplier: 100 },
+        { name: "复审审核价（元）", wordPattern: "复审审核价：(\\d+(?:\\.\\d+)?)元", excelKey: "复审价（万元）", type: "number", multiplier: 10000 },
+        { name: "复审核减金额（元）", wordPattern: "复审核减金额：(\\d+(?:\\.\\d+)?)元", excelKey: "核减造价（万元）", type: "number", multiplier: 10000 },
+        { name: "复审核减率（%）", wordPattern: "复审核减率：(\\d+(?:\\.\\d+)?)%", excelKey: "复审核减率", type: "percent", multiplier: 100 },
+        { name: "总核减率（%）", wordPattern: "总核减率：(\\d+(?:\\.\\d+)?)%", excelKey: "总核减率", type: "percent", multiplier: 100 },
+        { name: "一审误差率（%）", wordPattern: "工程造价一审误差率为(\\d+(?:\\.\\d+)?)%", excelKey: "一审误差率", type: "percent", multiplier: 100 }
+    ];
+
+    // 可选的匹配类型（便于扩展）
+    const MATCH_TYPES = [
+        { value: "string", label: "文本匹配" },
+        { value: "number", label: "数值" },
+        { value: "percent", label: "百分比" },
+        { value: "custom", label: "自定义" }
+    ];
+
+    // 从 localStorage 加载规则
+    function loadRules() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.warn('规则解析失败，使用默认值', e);
+            }
+        }
+        return [...defaultRulesConfig];
+    }
+
+    // 保存规则到 localStorage
+    function saveRules(rules) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(rules));
+    }
+
+    // 当前规则列表
+    let currentRules = loadRules();
+
+    // 将规则配置转换为 compareRules 格式（带 transform 函数）
+    function buildCompareRules(rulesConfig) {
+        return rulesConfig.map(rule => {
+            const multiplier = parseFloat(rule.multiplier) || 1;
+            let transform = null;
+            if (rule.type === 'number' || rule.type === 'percent') {
+                transform = (excelVal) => parseFloat(excelVal) * multiplier;
+            }
+            return {
+                excelField: rule.excelKey.replace(/[\r\n]+/g, ""),  // 去除换行符，与 Excel 列名处理一致
+                wordField: rule.name,
+                type: rule.type === 'custom' ? 'string' : rule.type,
+                transform: transform
+            };
+        });
+    }
+
+    // 渲染规则表格
+    function renderRulesTable() {
+        const tbody = document.getElementById('rulesTableBody');
+        let html = '';
+        currentRules.forEach((rule, index) => {
+            html += `<tr>
+                <td class="row-number">${index + 1}</td>
+                <td><input type="text" value="${escapeHtml(rule.name)}" data-index="${index}" data-field="name" class="rule-input"></td>
+                <td><input type="text" value="${escapeHtml(rule.wordPattern)}" data-index="${index}" data-field="wordPattern" class="rule-input" style="font-family:monospace;font-size:0.78rem;"></td>
+                <td><input type="text" value="${escapeHtml(rule.excelKey)}" data-index="${index}" data-field="excelKey" class="rule-input"></td>
+                <td>
+                    <select data-index="${index}" data-field="type" class="rule-select">
+                        ${MATCH_TYPES.map(t => `<option value="${t.value}" ${t.value === rule.type ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </td>
+                <td><input type="number" value="${rule.multiplier || 1}" data-index="${index}" data-field="multiplier" class="rule-input multiplier-input" step="any" title="Excel值 × 此系数 = 比较值"></td>
+                <td class="action-col"><button class="btn-delete" data-index="${index}" title="删除此行">✕</button></td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // 监听表格输入变化，自动保存
+    document.getElementById('rulesTableBody').addEventListener('input', (e) => {
+        if (e.target.classList.contains('rule-input')) {
+            const index = parseInt(e.target.dataset.index);
+            const field = e.target.dataset.field;
+            if (field === 'multiplier') {
+                currentRules[index][field] = parseFloat(e.target.value) || 1;
+            } else {
+                currentRules[index][field] = e.target.value;
+            }
+            saveRules(currentRules);
+        }
+    });
+    document.getElementById('rulesTableBody').addEventListener('change', (e) => {
+        if (e.target.classList.contains('rule-select')) {
+            const index = parseInt(e.target.dataset.index);
+            currentRules[index].type = e.target.value;
+            saveRules(currentRules);
+        }
+    });
+
+    // 删除规则
+    document.getElementById('rulesTableBody').addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-delete')) {
+            const index = parseInt(e.target.dataset.index);
+            currentRules.splice(index, 1);
+            saveRules(currentRules);
+            renderRulesTable();
+        }
+    });
+
+    // 添加规则
+    document.getElementById('btnAddRule').addEventListener('click', () => {
+        currentRules.push({ name: '', wordPattern: '', excelKey: '', type: 'string', multiplier: 1 });
+        saveRules(currentRules);
+        renderRulesTable();
+        // 滚动到最后一行
+        const tbody = document.getElementById('rulesTableBody');
+        tbody.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // 恢复默认
+    document.getElementById('btnResetRules').addEventListener('click', () => {
+        if (confirm('确定要恢复默认规则吗？当前修改将丢失。')) {
+            currentRules = [...defaultRulesConfig];
+            saveRules(currentRules);
+            renderRulesTable();
+        }
+    });
+
+    // 导出 JSON
+    document.getElementById('btnExportRules').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(currentRules, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '匹配规则配置.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // 导入 JSON
+    document.getElementById('btnImportRules').addEventListener('click', () => {
+        document.getElementById('importFileInput').click();
+    });
+    document.getElementById('importFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const imported = JSON.parse(ev.target.result);
+                if (!Array.isArray(imported)) throw new Error('格式错误：应为数组');
+                // 简单验证
+                imported.forEach(item => {
+                    if (!item.name && !item.wordPattern && !item.excelKey) throw new Error('规则字段不完整');
+                });
+                currentRules = imported;
+                saveRules(currentRules);
+                renderRulesTable();
+                alert('✅ 导入成功！');
+            } catch (err) {
+                alert('❌ 导入失败：' + err.message);
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; // 清除，允许重复导入同一文件
+    });
+
+    // 初始化渲染
+    renderRulesTable();
 </script>
 </body>
 </html>

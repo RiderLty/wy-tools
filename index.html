@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线工具箱</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 2rem;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: #64748b;
+            font-size: 1rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+            border-color: #3b82f6;
+        }
+        .card-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+        .card-content {
+            flex: 1;
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .card-desc {
+            font-size: 0.85rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .card-tag {
+            display: inline-block;
+            background: #eff6ff;
+            color: #3b82f6;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 48px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ 在线工具箱</h1>
+            <p>实用工具集合，点击卡片进入</p>
+        </div>
+        <div class="grid" id="toolGrid"></div>
+        <div class="footer">
+            <p>Powered by GitHub Pages</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 📝 工具配置数组 - 在这里添加/修改/删除工具
+        // ============================================================
+        const tools = [
+            {
+                name: "工程造价审核校验",
+                desc: "Word 会议议题文件与 Excel 明细表自动比对，检查项目信息、金额、核减率等关键字段",
+                icon: "📊",
+                path: "docx-excel-diff/",
+                tags: ["Word", "Excel", "比对"]
+            },
+            // 在这里添加更多工具...
+            // {
+            //     name: "工具名称",
+            //     desc: "工具描述",
+            //     icon: "🔧",
+            //     path: "subfolder/",
+            //     tags: ["标签1", "标签2"]
+            // },
+        ];
+
+        // ============================================================
+        // 渲染逻辑 - 一般无需修改
+        // ============================================================
+        function renderTools() {
+            const grid = document.getElementById('toolGrid');
+
+            if (tools.length === 0) {
+                grid.innerHTML = '<div class="empty">暂无工具，请在脚本中配置 tools 数组</div>';
+                return;
+            }
+
+            grid.innerHTML = tools.map(tool => `
+                <a href="${tool.path}" class="card">
+                    <div class="card-icon">${tool.icon}</div>
+                    <div class="card-content">
+                        <div class="card-title">${escapeHtml(tool.name)}</div>
+                        <div class="card-desc">${escapeHtml(tool.desc)}</div>
+                        ${tool.tags ? tool.tags.map(tag => `<span class="card-tag">${escapeHtml(tag)}</span>`).join(' ') : ''}
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // 初始化
+        renderTools();
+    </script>
+</body>
+</html>
